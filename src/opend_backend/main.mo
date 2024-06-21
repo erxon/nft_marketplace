@@ -3,6 +3,7 @@ import Principal "mo:base/Principal";
 import Debug "mo:base/Debug";
 import HashMap "mo:base/HashMap";
 import List "mo:base/List";
+import Iter "mo:base/Iter";
 import NFTActorClass "./nft";
 
 actor OpenD {
@@ -74,4 +75,26 @@ actor OpenD {
   public query func getOpenDCanisterID() : async Principal {
     return Principal.fromActor(OpenD);
   };
+
+  public query func isListed(id: Principal) : async Bool {
+    if (mapOfListings.get(id) == null){
+      return false;
+    } else {
+      return true;
+    }
+  };
+
+  public query func getListedNFTs() : async [Principal] {
+    let ids = Iter.toArray(mapOfListings.keys());
+    return ids;
+  };
+
+  public query func getOriginalOwner(id: Principal) : async Principal {
+    var listing : Listing = switch (mapOfListings.get(id)) {
+      case null return Principal.fromText("");
+      case (?result) result;
+    };
+
+    return listing.itemOwner;
+  }
 };

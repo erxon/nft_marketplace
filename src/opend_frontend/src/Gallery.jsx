@@ -10,7 +10,7 @@ function Gallery(props) {
         <div className="disGrid-root disGrid-item disGrid-grid-xs-12">
           <div className="disGrid-root disGrid-container disGrid-spacing-xs-5 disGrid-justify-content-xs-center">
             {props.ids && props.ids.map( (nftId) => (
-              <Item id={nftId.toString()} key={nftId} />
+              <Item id={nftId.toString()} key={nftId} role={props.role} />
             ))}
           </div>
         </div>

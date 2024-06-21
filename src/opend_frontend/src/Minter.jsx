@@ -20,6 +20,7 @@ function Minter() {
     setNewNFTPrincipal(newNFTID);
     setLoader(true);
   }
+  
   if (newNFTPrincipal === "") {
     return (
       <div className="minter-container">
