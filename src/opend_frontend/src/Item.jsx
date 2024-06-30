@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Actor, HttpAgent } from "@dfinity/agent";
 import { idlFactory } from "../../declarations/nft";
+import { idlFactory as tokenIdlFactory } from "../../declarations/eton_token_backend";
 import { Principal } from "@dfinity/principal";
 import Button from "./Button";
 import { opend_backend } from "../../declarations/opend_backend";
 import CURRENT_ID from "./main";
+import PriceLabel from "./PriceLabel";
 
 function Item(props) {
   const [name, setName] = useState();
@@ -15,6 +17,8 @@ function Item(props) {
   const [loaderHidden, setLoaderHidden] = useState(true);
   const [blur, setBlur] = useState();
   const [listingStatus, setListingStatus] = useState("");
+  const [priceLabel, setPriceLabel] = useState();
+  const [shouldDisplay, setDisplay] = useState(true);
 
   const id = Principal.fromText(props.id);
 
@@ -55,11 +59,14 @@ function Item(props) {
       }
     } else if (props.role === "discover") {
       const originalOwner = await opend_backend.getOriginalOwner(Principal.fromText(props.id));
-  
+
       if (originalOwner.toString() !== CURRENT_ID.toString()) {
-      
+
         setButton(<Button handleClick={handleBuy} text={"Buy"} />);
       }
+
+      const price = await opend_backend.getListedNFTPrice(Principal.fromText(props.id));
+      setPriceLabel(<PriceLabel sellPrice={price.toString()} />)
     }
   }
 
@@ -80,8 +87,30 @@ function Item(props) {
     setButton(<Button handleClick={sellItem} text={"Confirm"} />);
   }
 
-  function handleBuy(){
+  async function handleBuy() {
     console.log("Buy")
+    setLoaderHidden(false);
+
+    const tokenActor = Actor.createActor(tokenIdlFactory, {
+      agent,
+      canisterId: Principal.fromText("by6od-j4aaa-aaaaa-qaadq-cai")
+    });
+
+    const sellerId = await opend_backend.getOriginalOwner(Principal.fromText(props.id));
+    const itemPrice = await opend_backend.getListedNFTPrice(Principal.fromText(props.id));
+
+    const result = await tokenActor.transfer(sellerId, itemPrice);
+
+    if (result === "Success") {
+      const transferResult = await opend_backend.completePurchase(
+        Principal.fromText(props.id),
+        sellerId,
+        CURRENT_ID
+      );
+      console.log("purchase: " + transferResult);
+      setLoaderHidden(true)
+      setDisplay(false);
+    }
   }
 
   async function sellItem() {
@@ -104,7 +133,7 @@ function Item(props) {
   }
 
   return (
-    <div className="disGrid-item">
+    <div style={{ display: shouldDisplay ? "inline" : "none" }} className="disGrid-item">
       <div className="disPaper-root disCard-root makeStyles-root-17 disPaper-elevation1 disPaper-rounded">
         <img
           className="disCardMedia-root makeStyles-image-19 disCardMedia-media disCardMedia-img"
@@ -118,6 +147,7 @@ function Item(props) {
           <div></div>
         </div>
         <div className="disCardContent-root">
+          {priceLabel}
           <h2 className="disTypography-root makeStyles-bodyText-24 disTypography-h5 disTypography-gutterBottom">
             {name}<span className="purple-text"> {listingStatus}</span>
           </h2>
